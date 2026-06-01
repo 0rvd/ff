@@ -1,0 +1,539 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>جيراني - المنصة الذكية</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;700&family=Tajawal:wght@400;500;700;900&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        :root {
+            --bg: #060814;
+            --surface-panel: rgba(17, 24, 39, 0.7);
+            --surface-card: rgba(30, 41, 59, 0.5);
+            --border-glow: rgba(255, 255, 255, 0.05);
+            --accent: #38bdf8;
+            --accent-glow: rgba(56, 189, 248, 0.15);
+            --whatsapp: #22c55e;
+            --news-color: #c084fc;
+            --admin-color: #fbbf24;
+            --text-title: #f8fafc;
+            --text-body: #cbd5e1;
+        }
+
+        body {
+            margin: 0;
+            background-color: var(--bg);
+            background-image: radial-gradient(circle at 50% 0%, #1e1b4b 0%, #060814 70%);
+            color: var(--text-body);
+            font-family: 'Tajawal', sans-serif;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* الهيدر العلوي النظيف */
+        .app-bar {
+            background: rgba(15, 23, 42, 0.6);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            padding: 16px 6%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--border-glow);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .brand-section {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .brand-section i {
+            color: var(--accent);
+            font-size: 22px;
+        }
+
+        .brand-section span {
+            font-weight: 800;
+            font-size: 19px;
+            letter-spacing: 0.5px;
+            color: var(--text-title);
+        }
+
+        .profile-area {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .badge-pill {
+            padding: 8px 16px;
+            border-radius: 30px;
+            font-size: 13px;
+            font-weight: 700;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        .badge-user { color: var(--accent); background: rgba(56, 189, 248, 0.08); border-color: rgba(56, 189, 248, 0.2); }
+        .badge-admin { color: var(--admin-color); background: rgba(251, 191, 36, 0.08); border-color: rgba(251, 191, 36, 0.2); }
+
+        .select-custom {
+            background: #0f172a;
+            color: var(--admin-color);
+            border: 1px solid rgba(251, 191, 36, 0.3);
+            padding: 2px 8px;
+            border-radius: 8px;
+            font-family: 'Tajawal', sans-serif;
+            outline: none;
+            cursor: pointer;
+        }
+
+        .btn-logout {
+            background: rgba(239, 68, 68, 0.1);
+            color: #f87171;
+            border: 1px solid rgba(239, 68, 68, 0.2);
+            padding: 8px 16px;
+            border-radius: 12px;
+            font-size: 13px;
+            cursor: pointer;
+            transition: 0.2s;
+            font-weight: 600;
+        }
+
+        .btn-logout:hover { background: #ef4444; color: white; }
+
+        /* حاوية التصميم المنتصفة بقالب الـ Dashboard */
+        .wrapper {
+            max-width: 850px;
+            margin: 30px auto;
+            width: 90%;
+            flex: 1;
+        }
+
+        .welcome-card {
+            background: var(--surface-panel);
+            backdrop-filter: blur(16px);
+            border-radius: 24px;
+            padding: 30px;
+            border: 1px solid var(--border-glow);
+            margin-bottom: 25px;
+        }
+
+        .welcome-card h2 { margin: 0 0 8px 0; font-size: 26px; font-weight: 800; color: var(--text-title); }
+        .welcome-card p { margin: 0; color: #64748b; font-size: 14px; }
+
+        /* قائمة التحكم الشبكية */
+        .grid-menu {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 20px;
+            margin-top: 25px;
+        }
+
+        .panel-btn {
+            background: var(--surface-card);
+            border: 1px solid var(--border-glow);
+            padding: 30px 20px;
+            border-radius: 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .panel-btn i { font-size: 32px; transition: transform 0.3s ease; }
+        .panel-btn h3 { margin: 0; font-size: 18px; font-weight: 700; color: var(--text-title); }
+        .panel-btn p { margin: 0; font-size: 13px; color: #94a3b8; }
+
+        .panel-btn:hover {
+            transform: translateY(-5px);
+            background: rgba(30, 41, 59, 0.8);
+            box-shadow: 0 15px 30px -10px rgba(0,0,0,0.5);
+        }
+        .btn-one:hover { border-color: var(--accent); box-shadow: 0 10px 25px -5px var(--accent-glow); }
+        .btn-two:hover { border-color: #60a5fa; box-shadow: 0 10px 25px -5px rgba(96, 165, 250, 0.15); }
+        .btn-three:hover { border-color: var(--news-color); box-shadow: 0 10px 25px -5px rgba(192, 132, 252, 0.15); }
+
+        /* واجهات المحتوى وصناديق التغذية */
+        .content-view {
+            background: var(--surface-panel);
+            backdrop-filter: blur(16px);
+            border-radius: 24px;
+            padding: 30px;
+            border: 1px solid var(--border-glow);
+        }
+
+        .view-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+            border-bottom: 1px solid var(--border-glow);
+            padding-bottom: 15px;
+        }
+
+        .view-header h3 { margin: 0; font-size: 20px; font-weight: 700; color: var(--text-title); }
+        .btn-back { color: var(--accent); cursor: pointer; display: flex; align-items: center; gap: 6px; font-size: 14px; font-weight: 600; }
+
+        /* كروت العناصر المضافة */
+        .item-card {
+            background: rgba(15, 23, 42, 0.4);
+            border: 1px solid rgba(255,255,255,0.04);
+            border-radius: 18px;
+            padding: 20px;
+            margin-bottom: 15px;
+            transition: 0.2s;
+        }
+        .item-card:hover { background: rgba(15, 23, 42, 0.6); border-color: rgba(255,255,255,0.08); }
+
+        .faza-card { border-right: 4px solid var(--accent); }
+        .news-card { border-right: 4px solid var(--news-color); }
+
+        .card-meta { display: flex; justify-content: space-between; align-items: center; font-size: 13px; color: #64748b; }
+        .user-info { display: flex; align-items: center; gap: 8px; font-weight: 600; color: #94a3b8; }
+        .card-body-text { color: #e2e8f0; font-size: 15px; margin: 12px 0; line-height: 1.6; }
+
+        .btn-whatsapp-connect {
+            background: var(--whatsapp);
+            color: #020617;
+            text-decoration: none;
+            padding: 8px 16px;
+            border-radius: 10px;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 13px;
+            font-weight: 700;
+            margin-top: 5px;
+        }
+
+        /* أدوات النماذج والإدخال */
+        textarea, select.input-styled {
+            width: 100%;
+            padding: 14px;
+            background: rgba(2, 6, 23, 0.4);
+            color: white;
+            border: 1px solid var(--border-glow);
+            border-radius: 14px;
+            box-sizing: border-box;
+            outline: none;
+            font-family: 'Tajawal', sans-serif;
+            font-size: 15px;
+            margin-top: 10px;
+            transition: 0.3s;
+        }
+        textarea:focus, select.input-styled:focus { border-color: var(--accent); background: rgba(2, 6, 23, 0.6); }
+        textarea { height: 110px; resize: none; }
+
+        .btn-action-trigger {
+            background: linear-gradient(135deg, var(--accent) 0%, #0284c7 100%);
+            color: #020617;
+            border: none;
+            padding: 14px;
+            width: 100%;
+            border-radius: 14px;
+            font-weight: 700;
+            font-size: 15px;
+            font-family: 'Tajawal', sans-serif;
+            cursor: pointer;
+            margin-top: 20px;
+            box-shadow: 0 4px 12px var(--accent-glow);
+        }
+        .btn-news-trigger { background: linear-gradient(135deg, var(--news-color) 0%, #7e22ce 100%); color: white; box-shadow: none; }
+
+        .hidden { display: none !important; }
+    </style>
+</head>
+<body>
+
+    <!-- العارضة العلوية للتطبيق -->
+    <header class="app-bar">
+        <div class="brand-section">
+            <i class="fas fa-building-user"></i>
+            <span>جـيـراني</span>
+        </div>
+        <div class="profile-area">
+            <div id="navControl"></div>
+            <button class="btn-logout" onclick="localStorage.removeItem('isAuth'); location.href='index.html'">خروج</button>
+        </div>
+    </header>
+
+    <div class="wrapper">
+        <!-- لوحة التحكم الرئيسية واختيار الأنماط -->
+        <div id="roleSelect">
+            <div class="welcome-card">
+                <h2 id="welcomeUser">أهلاً بك جاري العزيز 👋</h2>
+                <p>مركز الخدمات والاتصال المباشر مع جيرانك وسكان منطقتك الفعليين.</p>
+            </div>
+            
+            <div class="grid-menu">
+                <div class="panel-btn btn-one" onclick="showView('feedView')">
+                    <i class="fas fa-hand-holding-hand" style="color: var(--accent);"></i>
+                    <h3>ساحة الفزعات الدارجة</h3>
+                    <p>تصفح واطلع على احتياجات جيرانك الحالية</p>
+                </div>
+                <div class="panel-btn btn-two" onclick="showView('requestView')">
+                    <i class="fas fa-paper-plane" style="color: #60a5fa;"></i>
+                    <h3>طلب مساعدة عاجلة</h3>
+                    <p>انشر طلباً مخصصاً ليصل لجميع سكان الحي</p>
+                </div>
+                <div class="panel-btn btn-three" onclick="showView('newsView')">
+                    <i class="fas fa-bullhorn" style="color: var(--news-color);"></i>
+                    <h3>أخبار وتنبيهات الحي</h3>
+                    <p>أخبار، أعمال صيانة، وإعلانات سكان الحارة</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- واجهة ساحة العرض (الفزعات) -->
+        <div id="feedView" class="content-view hidden">
+            <div class="view-header">
+                <h3 id="feedTitle">طلبات الفزعة الحالية</h3>
+                <div class="btn-back" onclick="backToRoles()"><i class="fas fa-arrow-left"></i> الرئيسية</div>
+            </div>
+            <div id="requestsFeed"></div>
+        </div>
+
+        <!-- واجهة إرسال طلب جديد -->
+        <div id="requestView" class="content-view hidden">
+            <div class="view-header">
+                <h3>تأكيد فزعة جديدة عاجلة</h3>
+                <div class="btn-back" onclick="backToRoles()"><i class="fas fa-arrow-left"></i> الرئيسية</div>
+            </div>
+            
+            <label style="font-size:14px; color:#94a3b8;">ما هو تصنيف المساعدة المطلوبة؟</label>
+            <select id="serviceType" class="input-styled" onchange="checkCategory()">
+                <option value="🚗 تعطل سيارة / اشتراك بطارية">🚗 تعطل سيارة / اشتراك بطارية</option>
+                <option value="🛠 فزعة سباكة / كهرباء طارئة">🛠 فزعة سباكة / كهرباء طارئة</option>
+                <option value="📦 نقل وتنزيل أغراض ثقيلة">📦 نقل وتنزيل أغراض ثقيلة</option>
+                <option value="🛒 توصيل مقاضي عاجلة للبيت">🛒 توصيل مقاضي عاجلة للبيت</option>
+                <option value="أخرى">❓ تصنيف مخصص آخر</option>
+            </select>
+            
+            <div id="specialDetailsBox" class="hidden">
+                <textarea id="serviceDetails" placeholder="اكتب تفاصيل الفزعة والموقع بدقة ليتمكن جيرانك من الوصول إليك ومساعدتك..."></textarea>
+            </div>
+
+            <button class="btn-action-trigger" onclick="postNewRequest()">بث طلب المساعدة في الحي المختار</button>
+        </div>
+
+        <!-- واجهة الأخبار والمستجدات -->
+        <div id="newsView" class="content-view hidden">
+            <div class="view-header">
+                <h3 id="newsTitle">تحديثات وأخبار الحي</h3>
+                <div class="btn-back" onclick="backToRoles()"><i class="fas fa-arrow-left"></i> الرئيسية</div>
+            </div>
+            
+            <div style="background: rgba(255,255,255,0.02); padding: 20px; border-radius:18px; margin-bottom:25px; border: 1px solid var(--border-glow);">
+                <span style="color: var(--news-color); font-weight:700; font-size:14px;">📢 هل ترغب في بث تحديث أو تنويه لجيرانك؟</span>
+                <textarea id="newsContent" placeholder="اكتب التنويه هنا.. مثال: (تم العثور على مفقودات أمام المسجد) أو (تنويه عن انقطاع المياه للغسيل).."></textarea>
+                <button class="btn-action-trigger btn-news-trigger" onclick="postNewNews()">نشر وإعلان الخبر باللوحة</button>
+            </div>
+
+            <div id="newsFeedContainer"></div>
+        </div>
+    </div>
+
+    <script>
+        const SUPABASE_URL = 'https://fdmzvtypxfoexjcwfnzq.supabase.co'; 
+        const SUPABASE_ANON_KEY = 'sb_publishable_ZS0QXq2GkYayJ5abz8vLfg_YSFqKAhi';
+        const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        if(localStorage.getItem('isAuth') !== 'true') window.location.href = 'index.html';
+
+        const uName = localStorage.getItem('username');
+        const uNeighborhood = localStorage.getItem('userNeighborhood');
+        const isAdmin = localStorage.getItem('isAdmin') === 'true';
+
+        const checkAdminStr = uNeighborhood ? uNeighborhood.trim().toLowerCase() : '';
+        let activeArea = (checkAdminStr === 'ادمن' || checkAdminStr === 'admin') ? 'الفيصلية' : uNeighborhood; 
+
+        function initPlatform() {
+            document.getElementById('welcomeUser').innerText = isAdmin ? `مرحباً بك يا مدير النظام 👑` : `أهلاً يا ${uName} 👋`;
+            const navControl = document.getElementById('navControl');
+            
+            if(isAdmin) {
+                navControl.innerHTML = `
+                    <span class="badge-pill badge-admin">
+                        <i class="fas fa-crown"></i> الإدارة | نطاق: 
+                        <select class="select-custom" id="adminAreaNav" onchange="adminChangeArea(this.value)">
+                            <option value="الروضة" ${activeArea==='الروضة'?'selected':''}>حي الروضة</option>
+                            <option value="السلامة" ${activeArea==='السلامة'?'selected':''}>حي السلامة</option>
+                            <option value="الفيصلية" ${activeArea==='الفيصلية'?'selected':''}>حي الفيصلية</option>
+                            <option value="النعيم" ${activeArea==='النعيم'?'selected':''}>حي النعيم</option>
+                            <option value="المرجان" ${activeArea==='المرجان'?'selected':''}>حي المرجان</option>
+                        </select>
+                    </span>`;
+            } else {
+                navControl.innerHTML = `<span class="badge-pill badge-user"><i class="fas fa-location-dot"></i> حي ${uNeighborhood}</span>`;
+            }
+            
+            loadAreaRequests();
+            loadAreaNews();
+        }
+
+        function adminChangeArea(val) {
+            activeArea = val;
+            loadAreaRequests();
+            loadAreaNews();
+        }
+
+        function checkCategory() {
+            const cat = document.getElementById('serviceType').value;
+            const box = document.getElementById('specialDetailsBox');
+            if(cat === 'أخرى') {
+                box.classList.remove('hidden');
+            } else {
+                box.classList.add('hidden');
+                document.getElementById('serviceDetails').value = "";
+            }
+        }
+
+        async function loadAreaRequests() {
+            document.getElementById('feedTitle').innerText = `طلبات الفزعة القائمة • حي ${activeArea}`;
+            const feed = document.getElementById('requestsFeed');
+            feed.innerHTML = ""; 
+
+            const { data, error } = await _supabase
+                .from('requests')
+                .select('*')
+                .eq('neighborhood', activeArea)
+                .not('request_type', 'eq', '📢 خبر عام في الحي')
+                .order('created_at', { ascending: false });
+
+            if (!error && data) {
+                if(data.length === 0) {
+                    feed.innerHTML = "<p style='color:#64748b; text-align:center; padding:20px;'>لا توجد أي طلبات مساعدة قائمة في هذا الحي حالياً.</p>";
+                    return;
+                }
+                data.forEach(req => {
+                    const card = document.createElement('div');
+                    card.className = 'item-card faza-card';
+                    const isYou = req.user_name === uName;
+                    
+                    card.innerHTML = `
+                        <div class="card-meta">
+                            <span class="user-info"><i class="fas fa-circle-user"></i> ${req.user_name} ${isYou ? '<span style="color:var(--accent); font-size:12px;">(أنت)</span>' : ''}</span>
+                            <span style="background:rgba(34,197,94,0.1); color:#4ade80; font-size:11px; padding:2px 8px; border-radius:6px;">نشط الآن</span>
+                        </div>
+                        <div class="card-body-text">
+                            <span style="color:var(--text-title); font-weight:700;">التصنيف: ${req.request_type}</span>
+                            ${req.details ? '<br><span style="font-size:14px; color:#94a3b8; display:block; margin-top:6px;">التفاصيل الإضافية: ' + req.details + '</span>' : ''}
+                        </div>
+                        <a href="https://wa.me/966500000000" target="_blank" class="btn-whatsapp-connect">
+                            <i class="fab fa-whatsapp"></i> قبول الفزعة والتواصل المباشر
+                        </a>
+                    `;
+                    feed.appendChild(card);
+                });
+            }
+        }
+
+        async function loadAreaNews() {
+            document.getElementById('newsTitle').innerText = `أخبار ومستجدات الحارة • حي ${activeArea}`;
+            const newsFeed = document.getElementById('newsFeedContainer');
+            newsFeed.innerHTML = "";
+
+            const { data, error } = await _supabase
+                .from('requests')
+                .select('*')
+                .eq('neighborhood', activeArea)
+                .eq('request_type', '📢 خبر عام في الحي')
+                .order('created_at', { ascending: false });
+
+            if (!error && data) {
+                if(data.length === 0) {
+                    newsFeed.innerHTML = "<p style='color:#64748b; text-align:center; padding:20px;'>لا توجد أخبار أو إعلانات منشورة لهذا الحي مؤخراً.</p>";
+                    return;
+                }
+                data.forEach(news => {
+                    const card = document.createElement('div');
+                    card.className = 'item-card news-card';
+                    card.innerHTML = `
+                        <div class="card-meta">
+                            <span class="user-info" style="color:var(--news-color);"><i class="fas fa-bullhorn"></i> إعلان من الجار: ${news.user_name}</span>
+                        </div>
+                        <p class="card-body-text">${news.details}</p>
+                    `;
+                    newsFeed.appendChild(card);
+                });
+            }
+        }
+
+        async function postNewRequest() {
+            const type = document.getElementById('serviceType').value;
+            let details = "طلب فزعة طارئ ومستعجل";
+
+            if(type === 'أخرى') {
+                const textVal = document.getElementById('serviceDetails').value.trim();
+                if(!textVal) { alert("الرجاء كتابة تفاصيل طلب المساعدة المخصص أولاً!"); return; }
+                details = textVal;
+            }
+
+            const checkAdminStr = uNeighborhood ? uNeighborhood.trim().toLowerCase() : '';
+            const postArea = (checkAdminStr === 'ادمن' || checkAdminStr === 'admin') ? activeArea : uNeighborhood;
+
+            const { error } = await _supabase
+                .from('requests')
+                .insert([{ user_name: uName, request_type: type, details: details, neighborhood: postArea }]);
+
+            if (!error) {
+                alert("تم إرسال ونشر طلب فزعتك بنجاح في نظام الحي!");
+                document.getElementById('serviceDetails').value = "";
+                showView('feedView');
+            }
+        }
+
+        async function postNewNews() {
+            const content = document.getElementById('newsContent').value.trim();
+            if(!content) { alert("عذراً، يجب كتابة نص الإعلان أو الخبر قبل البث!"); return; }
+
+            const checkAdminStr = uNeighborhood ? uNeighborhood.trim().toLowerCase() : '';
+            const postArea = (checkAdminStr === 'ادمن' || checkAdminStr === 'admin') ? activeArea : uNeighborhood;
+
+            const { error } = await _supabase
+                .from('requests')
+                .insert([{ user_name: uName, request_type: '📢 خبر عام في الحي', details: content, neighborhood: postArea }]);
+
+            if (!error) {
+                alert("تم تعميم وبث الخبر لجميع سكان الحي بنجاح! 📢");
+                document.getElementById('newsContent').value = "";
+                loadAreaNews();
+            }
+        }
+
+        function showView(viewId) {
+            document.getElementById('roleSelect').classList.add('hidden');
+            document.getElementById('feedView').classList.add('hidden');
+            document.getElementById('requestView').classList.add('hidden');
+            document.getElementById('newsView').classList.add('hidden');
+            
+            document.getElementById(viewId).classList.remove('hidden');
+            if(viewId === 'feedView') loadAreaRequests();
+            if(viewId === 'newsView') loadAreaNews();
+        }
+
+        function backToRoles() {
+            document.getElementById('roleSelect').classList.remove('hidden');
+            document.getElementById('feedView').classList.add('hidden');
+            document.getElementById('requestView').classList.add('hidden');
+            document.getElementById('newsView').classList.add('hidden');
+        }
+
+        window.onload = initPlatform;
+    </script>
+</body>
+</html>
